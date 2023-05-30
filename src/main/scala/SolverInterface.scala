@@ -24,12 +24,12 @@ object SolverInterface {
       case Not(inner) => z3.mkNot(formulaToZ3AST(inner))
 
   /**
-    * Check if a formula is valid by checking for the satisfiability of its negation
+    * Check if a formula is invalid by checking for its satisfiability
     *
     * @param f the formula
     * @return a Future containing a pair, an optional Boolean about validity, and if not valid, a list of variable assignments
     */
-  def checkFormulaValidity(f: Formula): Future[(Boolean, Option[List[Literal]])] =
+  def checkFormulaInvalidity(f: Formula): Future[(Boolean, Option[List[Literal]])] =
     def modelToCounterexample(m: Z3Model): List[Literal] =
       // get the interpretation of each constant from the model
       val consts = m.getConstInterpretations.toList
@@ -43,7 +43,7 @@ object SolverInterface {
 
     // generate a solver locally
     val solver = z3.mkSolver()
-    solver.assertCnstr(z3.mkNot(f.toZ3AST))
+    solver.assertCnstr(f.toZ3AST)
     
     def getRes =
       val res = solver.check()
@@ -55,17 +55,17 @@ object SolverInterface {
       if res.isEmpty then
         throw UnknownSatisfiabilityException(f)
       else
-        (res.map(!_).get, model.map(modelToCounterexample(_)))
+        (!res.get, model.map(modelToCounterexample(_)))
     
     Future(getRes)
 
   extension (f: Formula) {
-    def isValid: Future[(Boolean, Option[List[Literal]])] = checkFormulaValidity(f)
+    def isInvalid: Future[(Boolean, Option[List[Literal]])] = checkFormulaInvalidity(f)
     def toZ3AST = formulaToZ3AST(f)
   }
 
   extension (f: CNF) {
-    def isValid: Future[(Boolean, Option[List[Literal]])] = f.toFormula.isValid
+    def isInvalid: Future[(Boolean, Option[List[Literal]])] = f.toFormula.isInvalid
   }
 }
 
