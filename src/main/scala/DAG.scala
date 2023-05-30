@@ -4,6 +4,7 @@ import scala.collection.mutable
 import scala.util.Try
 import scala.util.Failure
 import scala.util.Success
+import z3.scala.dsl.Or
 
 /**
   * Provides a directed acyclic graph interface
@@ -12,7 +13,7 @@ import scala.util.Success
   * @param root  the roots or initial elements of the DAG 
   * @param edges map storing the outgoing edges for each vertex
   */
-class DAG[A <: Ordered[A]](val elems: Set[A], val roots: Set[A], val edges: Map[A, Set[A]]):
+class DAG[A : Ordering](val elems: Set[A], val roots: Set[A], val edges: Map[A, Set[A]]):
   /**
     * Generates a stream of breadth-first paths starting at the roots of this DAG
     *
@@ -58,7 +59,7 @@ class DAG[A <: Ordered[A]](val elems: Set[A], val roots: Set[A], val edges: Map[
 
   // Aliases
 
-  infix def + (path: List[A]) = withPath(_)
+  infix def + (path: List[A]) = this.withPath(path)
     
   // Helpers
 
@@ -75,3 +76,6 @@ class DAG[A <: Ordered[A]](val elems: Set[A], val roots: Set[A], val edges: Map[
       case Some(vs) => Some(vs + v)
       case None => Some(Set(v))
     }
+
+object DAG:
+  def empty[A : Ordering] = DAG[A](Set.empty, Set.empty, Map.empty)
