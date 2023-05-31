@@ -3,7 +3,8 @@ package countercaching
 object BooleanStructure {
   sealed trait Formula
 
-  case class Variable(val name: String)
+  case class Variable(val name: String):
+    override def toString(): String = s"[$name]"
 
   sealed trait Polarity:
     def unary_! : Polarity
