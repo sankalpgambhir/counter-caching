@@ -24,14 +24,15 @@ class DAG[A : Ordering](val elems: Set[A], val roots: Set[A], val edges: Map[A, 
     val queue: mutable.Queue[(A, List[A])] = mutable.Queue(roots.toSeq.map(r => r -> List(r)): _*)
     
     // LazyList to store breadth-first paths
-    lazy val paths: LazyList[List[A]] = Try(queue.dequeue()) match {
+    def paths: LazyList[List[A]] = Try(queue.dequeue()) match {
       case Success((current, path)) =>
-        val neighbors = edges.getOrElse(current, Set.empty)
-        val newPaths = neighbors.map(neighbor => (neighbor, path :+ neighbor))
+        val neighbours = edges.getOrElse(current, Set.empty)
+        val newPaths = neighbours.map(neighbour => (neighbour, path :+ neighbour))
         queue.enqueueAll(newPaths)
         path #:: paths
-      case Failure(exception) =>
+      case Failure(e : NoSuchElementException) => // dequeueing finished
         LazyList.empty[List[A]]
+      case Failure(exception) => throw exception
     }
 
     paths
@@ -43,14 +44,14 @@ class DAG[A : Ordering](val elems: Set[A], val roots: Set[A], val edges: Map[A, 
     * @return updated DAG
     */
   def withPath(path: List[A]): DAG[A] = 
-    val newElems = elems ++ path
-    val newEdges = edgesWithPath(path)
-    val newRoots = path.headOption.filterNot(h => roots.contains(h)).map(roots + _).getOrElse(roots)
+    val sortedPath = path.sorted
+    val newElems = elems ++ sortedPath
+    val newEdges = edgesWithPath(sortedPath)
+    val newRoots = sortedPath.headOption.filterNot(h => roots.contains(h)).map(roots + _).getOrElse(roots)
     DAG(newElems, newRoots, newEdges)
 
   private def edgesWithPath(path: List[A]): Map[A, Set[A]] =
-    val sortedPath = path.sorted
-    sortedPath match
+    path match
       case head :: next => 
           next.foldLeft((edges, head)) {
             case ((map, prev), curr) => (appendAtKey(map, prev, curr), curr)
