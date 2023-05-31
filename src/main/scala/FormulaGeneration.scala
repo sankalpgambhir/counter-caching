@@ -18,13 +18,13 @@ class FormulaGeneration(val numLiterals: Int = 10, val baseName: String = "x") {
             Literal(Variable(s"$baseName:$num"), if r.nextBoolean then Positive else Negative)
     }
 
-    def generateRandomFormula(size: Int): Formula = 
-        if size <= 1 then
+    def generateRandomFormula(depth: Int): Formula = 
+        if depth <= 1 then
             // generate a literal
             randomly.nextLiteral()
         else 
             // generate a connector
-            val children = (0 to 1).map(i => generateRandomFormula(size - 1))
+            val children = (0 to 1).map(i => generateRandomFormula(depth - 1))
             if randomly.nextBoolean() then
                 And(children)
             else 
