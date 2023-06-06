@@ -5,7 +5,7 @@ import BooleanStructure.*
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object SolverInterface {
+class SolverInterface {
   val z3 = new Z3Context("MODEL" -> true)
 
   class UnknownSatisfiabilityException(val formula: Formula) extends Exception
@@ -29,7 +29,7 @@ object SolverInterface {
     * @param f the formula
     * @return a Future containing a pair, an optional Boolean about validity, and if not valid, a list of variable assignments
     */
-  def checkFormulaInvalidity(f: Formula): Future[(Boolean, Option[List[Literal]])] =
+  def checkFormulaInvalidity(f: Formula): Option[(Boolean, Option[List[Literal]])] =
     def modelToCounterexample(m: Z3Model): List[Literal] =
       // get the interpretation of each constant from the model
       val consts = m.getConstInterpretations.toList
@@ -44,6 +44,7 @@ object SolverInterface {
     // generate a solver locally
     val solver = z3.mkSolver()
     solver.assertCnstr(f.toZ3AST)
+    solver.set(Map("timeout" -> 2000))
     
     def getRes =
       val res = solver.check()
@@ -53,19 +54,19 @@ object SolverInterface {
       // we force the evaluation of the Option res
       // so we can filter to a SAT or UNSAT res, otherwise throw an exception
       if res.isEmpty then
-        throw UnknownSatisfiabilityException(f)
+        None
       else
-        (!res.get, model.map(modelToCounterexample(_)))
+        Some((!res.get, model.map(modelToCounterexample(_))))
     
-    Future(getRes)
+    getRes
 
   extension (f: Formula) {
-    def isInvalid: Future[(Boolean, Option[List[Literal]])] = checkFormulaInvalidity(f)
+    def isInvalid: Option[(Boolean, Option[List[Literal]])] = checkFormulaInvalidity(f)
     def toZ3AST = formulaToZ3AST(f)
   }
 
   extension (f: CNF) {
-    def isInvalid: Future[(Boolean, Option[List[Literal]])] = f.toFormula.isInvalid
+    def isInvalid: Option[(Boolean, Option[List[Literal]])] = f.toFormula.isInvalid
   }
 }
 

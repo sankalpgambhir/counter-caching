@@ -4,7 +4,7 @@ import BooleanStructure.*
 import scala.util.Random
 
 class FormulaGeneration(val numLiterals: Int = 10, val baseName: String = "x") {
-    val randomly = Random()
+    val randomly = Random(5)
 
     extension (r: Random) {
         /**
